@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clover 書類作成</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif; background: #f0f2f0; color: #111; }
+
+/* ===== ナビ ===== */
+#nav {
+  background: #1a1a2e;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+#nav .logo { color: #7ecfa4; font-size: 15px; font-weight: 700; letter-spacing: .08em; margin-right: 24px; padding: 16px 0; }
+.tab-btn {
+  background: none; border: none; color: #aaa; font-size: 13px; font-family: inherit;
+  padding: 16px 20px; cursor: pointer; border-bottom: 3px solid transparent; transition: .15s;
+}
+.tab-btn:hover { color: #fff; }
+.tab-btn.active { color: #7ecfa4; border-bottom-color: #7ecfa4; }
+
+/* ===== 共通フォーム ===== */
+.sheet { display: none; max-width: 620px; margin: 36px auto; background: #fff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.10); padding: 32px 40px; }
+.sheet.active { display: block; }
+.sheet h2 { font-size: 18px; font-weight: 600; margin-bottom: 24px; color: #111; }
+
+.f-sec { margin-bottom: 20px; }
+.f-sec-title { font-size: 11px; color: #aaa; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 6px; }
+.f-field { margin-bottom: 12px; }
+.f-field label { display: block; font-size: 12px; color: #888; margin-bottom: 5px; }
+.f-field input, .f-field textarea, .f-field select {
+  width: 100%; border: 1.5px solid #e0e0e0; border-radius: 8px;
+  padding: 10px 14px; font-size: 14px; color: #111; outline: none;
+  font-family: inherit; transition: border-color .15s; background: #fff;
+}
+.f-field input:focus, .f-field textarea:focus, .f-field select:focus { border-color: #3d8f5f; }
+.f-field textarea { resize: vertical; min-height: 80px; }
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+/* 品目・料金行 */
+.row-header { display: grid; gap: 8px; font-size: 11px; color: #aaa; padding: 0 4px 4px; }
+.item-row, .price-row { display: grid; gap: 8px; margin-bottom: 8px; align-items: center; }
+.inv-row-header { grid-template-columns: 3fr 70px 60px 90px 60px 72px 32px; }
+.inv-item-row  { grid-template-columns: 3fr 70px 60px 90px 60px 72px 32px; }
+.price-row-header { grid-template-columns: 3fr 80px 110px 30px; }
+.price-row      { grid-template-columns: 3fr 80px 110px 30px; }
+.item-row input, .price-row input {
+  border: 1.5px solid #e0e0e0; border-radius: 8px; padding: 9px 10px;
+  font-size: 13px; color: #111; outline: none; font-family: inherit; width: 100%;
+}
+.item-row input:focus, .price-row input:focus { border-color: #3d8f5f; }
+.tax-sel { font-family: inherit; font-size: 12px; padding: 0 4px; border: 1.5px solid #ddd; border-radius: 6px; height: 36px; background: #fff; cursor: pointer; width: 100%; }
+.tax-sel.incl { background: #fff8e1; border-color: #f0c040; color: #7a5700; }
+.del-btn { background: none; border: 1.5px solid #e0e0e0; border-radius: 8px; color: #aaa; font-size: 15px; cursor: pointer; height: 38px; }
+.del-btn:hover { border-color: #e57373; color: #e57373; }
+.add-row-btn { background: none; border: 1.5px dashed #c0c0c0; border-radius: 8px; width: 100%; padding: 9px; font-size: 13px; color: #aaa; cursor: pointer; margin-top: 2px; }
+.add-row-btn:hover { border-color: #3d8f5f; color: #3d8f5f; }
+
+/* 写真 */
+.photo-drop { border: 2px dashed #d0d0d0; border-radius: 10px; padding: 18px; text-align: center; cursor: pointer; background: #fafafa; }
+.photo-drop:hover { border-color: #3d8f5f; }
+.photo-drop input[type=file] { display: none; }
+.photo-drop span { font-size: 13px; color: #aaa; }
+.photo-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 12px; }
+.photo-thumb { position: relative; aspect-ratio: 4/3; border-radius: 8px; overflow: hidden; background: #eee; }
+.photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.rm-photo { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,.55); color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 13px; cursor: pointer; }
+.photo-cap input { font-size: 11px; padding: 4px 8px; border: 1.5px solid #e0e0e0; border-radius: 6px; width: 100%; margin-top: 4px; font-family: inherit; outline: none; }
+.photo-cap input:focus { border-color: #3d8f5f; }
+
+.gen-btn { width: 100%; background: #3d8f5f; color: #fff; border: none; border-radius: 10px; padding: 14px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; letter-spacing: .03em; }
+.gen-btn:hover { background: #2f7249; }
+
+/* ===== プレビュー ===== */
+.preview-wrap { display: none; }
+.preview-wrap.active { display: block; }
+.preview-btns { max-width: 720px; margin: 0 auto; padding: 20px 0 10px; text-align: center; }
+.back-btn { background: none; border: 1.5px solid #3d8f5f; color: #3d8f5f; border-radius: 8px; padding: 10px 24px; font-size: 14px; cursor: pointer; margin-right: 10px; }
+.back-btn:hover { background: #f0f8f4; }
+.prt-btn { background: #3d8f5f; color: #fff; border: none; border-radius: 8px; padding: 10px 24px; font-size: 14px; cursor: pointer; }
+.prt-btn:hover { background: #2f7249; }
+
+/* 共通書類スタイル */
+.doc-page { max-width: 720px; margin: 0 auto 40px; background: #fff; padding: 40px 48px; box-shadow: 0 4px 24px rgba(0,0,0,0.10); }
+.title-bar { background: #1a1a2e; color: #fff; display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; margin-bottom: 22px; }
+.title-bar .tbl { font-size: 16px; font-weight: 700; letter-spacing: .08em; color: #7ecfa4; }
+.title-bar .tbtl { font-size: 20px; font-weight: 300; letter-spacing: .25em; }
+.title-bar .tbmeta { font-size: 11px; color: #aaa; text-align: right; line-height: 1.8; }
+
+.client-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; gap: 20px; }
+.client-name { font-size: 20px; font-weight: 700; border-bottom: 2px solid #111; padding-bottom: 3px; display: inline-block; }
+.client-sub { font-size: 12px; color: #666; line-height: 1.8; margin-top: 4px; }
+.date-box { text-align: right; font-size: 12px; color: #555; line-height: 2; flex-shrink: 0; }
+
+.amount-box { background: #f0f8f4; border-left: 4px solid #3d8f5f; padding: 14px 22px; margin-bottom: 18px; border-radius: 0 8px 8px 0; display: flex; justify-content: space-between; align-items: center; }
+.amount-label { font-size: 13px; color: #555; }
+.amount-value { font-size: 28px; font-weight: 700; }
+
+.sec-title { background: #1a1a2e; color: #fff; font-size: 12px; font-weight: 400; letter-spacing: .06em; padding: 5px 12px; margin-bottom: 8px; }
+.text-block { background: #fafafa; border: 1px solid #eee; border-radius: 4px; padding: 12px 16px; font-size: 13px; line-height: 1.9; min-height: 50px; white-space: pre-wrap; }
+
+.info-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.info-table td { padding: 7px 12px; border: 1px solid #eee; }
+.info-table td:first-child { background: #f5f5f5; color: #666; width: 30%; font-size: 12px; }
+
+.inv-table, .rec-table, .price-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.inv-table thead th, .rec-table thead th, .price-table thead th { background: #111; color: #fff; padding: 7px 12px; font-weight: 400; text-align: left; }
+.inv-table thead th:not(:first-child), .rec-table thead th:not(:first-child), .price-table thead th:not(:first-child) { text-align: right; }
+.inv-table tbody td, .rec-table tbody td, .price-table tbody td { padding: 0; height: 24px; border-bottom: 1px solid #eee; }
+.inv-table tbody td, .rec-table tbody td { padding: 6px 12px; }
+.price-table tbody td { padding: 7px 12px; }
+.inv-table tbody td:not(:first-child), .rec-table tbody td:not(:first-child), .price-table tbody td:not(:first-child) { text-align: right; }
+.inv-table .num { text-align: center; color: #aaa; font-size: 11px; }
+.inv-table tfoot td, .rec-table tfoot td, .price-table tfoot td { padding: 6px 12px; text-align: right; font-size: 12px; color: #555; }
+.inv-table tfoot tr.grand td, .rec-table tfoot tr.grand td, .price-table tfoot tr.grand td { font-size: 15px; font-weight: 700; color: #111; border-top: 2px solid #111; }
+
+.photo-print-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+.photo-print-item img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 6px; border: 1px solid #eee; display: block; }
+.photo-print-cap { font-size: 11px; color: #666; margin-top: 4px; text-align: center; }
+
+.footer-row { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 20px; padding-top: 16px; border-top: 1px solid #eee; }
+.issuer { font-size: 12px; color: #444; line-height: 2; }
+.issuer-name { font-size: 14px; font-weight: 600; color: #111; }
+.seal-area { width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; }
+.seal-area img { width: 100px; height: 100px; object-fit: contain; }
+
+/* 備考行 */
+.detail-row { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; }
+.detail-label { font-size: 12px; color: #888; white-space: nowrap; min-width: 56px; }
+.detail-value { font-size: 14px; color: #111; border-bottom: 1px solid #ddd; flex: 1; padding-bottom: 2px; }
+
+/* ===== 印刷 ===== */
+@media print {
+  #nav { display: none !important; }
+  body { background: #fff; }
+  .sheet { display: none !important; }
+  .preview-wrap { display: none !important; }
+  .preview-wrap.active { display: block !important; }
+  .preview-btns { display: none !important; }
+  @page { size: A4 portrait; margin: 10mm 12mm; }
+  .doc-page { box-shadow: none; margin: 0; max-width: 100%; padding: 16px 20px; }
+  .title-bar { margin-bottom: 14px; }
+  .amount-box { padding: 10px 18px; margin-bottom: 14px; }
+  .amount-value { font-size: 22px; }
+  .inv-table thead th, .rec-table thead th, .price-table thead th { padding: 5px 8px; font-size: 11px; }
+  .inv-table tbody td, .rec-table tbody td, .price-table tbody td { height: 20px; padding: 2px 8px; font-size: 11px; }
+  .inv-table tfoot td, .rec-table tfoot td, .price-table tfoot td { padding: 4px 8px; font-size: 11px; }
+  .inv-table tfoot tr.grand td, .rec-table tfoot tr.grand td, .price-table tfoot tr.grand td { font-size: 13px; }
+  .sec-title { padding: 4px 10px; font-size: 11px; margin-bottom: 6px; }
+  .text-block { font-size: 11px; padding: 8px 12px; min-height: 36px; }
+  .info-table td { padding: 5px 10px; font-size: 11px; }
+  .footer-row { margin-top: 12px; padding-top: 10px; }
+  .seal-area { width: 80px; height: 80px; }
+  .seal-area img { width: 80px; height: 80px; }
+  .photo-print-grid { gap: 8px; }
+  .client-row { margin-bottom: 12px; }
+  /* 点検報告書1ページ収め */
+  #rep-preview .doc-page { zoom: var(--rep-zoom, 0.95); padding: 10px 14px; }
+  #rep-preview [style*="margin-bottom:16px"] { margin-bottom: 5px !important; }
+  #rep-preview [style*="margin-bottom:8px"] { margin-bottom: 4px !important; }
+  #rep-preview .text-block { min-height: 0 !important; padding: 5px 10px !important; line-height: 1.5 !important; }
+  #rep-preview .sec-title { padding: 3px 8px !important; margin-bottom: 3px !important; }
+  #rep-preview .info-table td { padding: 3px 8px !important; }
+  #rep-preview .footer-row { margin-top: 6px !important; padding-top: 6px !important; }
+  #rep-preview .photo-print-grid { gap: 6px !important; }
+  #rep-preview .client-row { margin-bottom: 8px !important; }
+  #rep-preview .price-table thead th, #rep-preview .price-table tbody td, #rep-preview .price-table tfoot td { padding: 3px 8px !important; }
+}
+
+/* ===== 見積書専用 ===== */
+.est-page { max-width: 720px; margin: 0 auto 40px; background: #fff; padding: 40px 52px; box-shadow: 0 4px 24px rgba(0,0,0,0.10); }
+.est-top-right { text-align: right; font-size: 12px; color: #333; margin-bottom: 8px; line-height: 1.8; }
+.est-title { text-align: center; font-size: 28px; font-weight: 700; letter-spacing: .4em; margin: 12px 0 24px; color: #111; }
+.est-parties { display: flex; justify-content: space-between; gap: 24px; margin-bottom: 20px; align-items: flex-start; }
+.est-left { flex: 1; }
+.est-to-name { font-size: 20px; font-weight: 700; border-bottom: 2px solid #111; display: inline-block; padding-bottom: 3px; margin-bottom: 10px; }
+.est-to-honorific { font-size: 14px; font-weight: 400; }
+.est-meta-lines { font-size: 13px; color: #333; line-height: 2; margin-bottom: 10px; }
+.est-greeting { font-size: 13px; color: #333; margin-bottom: 14px; }
+.est-amount-line { font-size: 15px; font-weight: 600; color: #111; }
+.est-amount-line span { font-size: 22px; font-weight: 700; margin-left: 16px; }
+.est-right { text-align: right; font-size: 12px; color: #333; line-height: 2; flex-shrink: 0; min-width: 200px; }
+.est-right-name { font-size: 15px; font-weight: 700; color: #111; }
+.est-right-seal { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 6px; }
+.est-seal-area { width: 72px; height: 72px; display: flex; align-items: center; justify-content: center; }
+.est-seal-area img { width: 72px; height: 72px; object-fit: contain; }
+.est-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 0; }
+.est-table thead th { background: #d0d0d0; color: #111; padding: 8px 12px; font-weight: 500; text-align: center; border: 1px solid #aaa; }
+.est-table thead th:first-child { text-align: left; }
+.est-table tbody td { padding: 0 12px; height: 28px; border: 1px solid #ccc; font-size: 13px; }
+.est-table tbody td.right { text-align: right; }
+.est-table tfoot td { padding: 6px 12px; border: 1px solid #ccc; text-align: right; font-size: 13px; }
+.est-table tfoot td.label { text-align: left; color: #555; }
+.est-table tfoot tr.grand td { font-weight: 700; font-size: 14px; background: #f5f5f5; }
+.est-notes-area { margin-top: 16px; font-size: 12px; color: #444; white-space: pre-wrap; }
+
+@media print {
+  .est-page { box-shadow: none; margin: 0; max-width: 100%; padding: 24px 32px; }
+  .est-table tbody td { height: 22px; font-size: 11px; padding: 0 8px; }
+  .est-table thead th { padding: 5px 8px; font-size: 11px; }
+  .est-table tfoot td { padding: 4px 8px; font-size: 11px; }
+  .est-title { font-size: 22px; margin: 8px 0 16px; }
+  .est-to-name { font-size: 16px; }
+  .est-amount-line span { font-size: 18px; }
+  .est-seal-area { width: 60px; height: 60px; }
+  .est-seal-area img { width: 60px; height: 60px; }
+  .est-right { font-size: 11px; }
+}
+
+/* ===== 領収書専用 ===== */
+.rcpt-page { max-width: 680px; margin: 0 auto 40px; background: #fff; padding: 44px 56px; box-shadow: 0 4px 24px rgba(0,0,0,0.10); }
+.rcpt-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+.rcpt-title { font-size: 30px; font-weight: 700; letter-spacing: .35em; color: #111; }
+.rcpt-meta { text-align: right; font-size: 12px; color: #444; line-height: 2; }
+.rcpt-to { font-size: 20px; font-weight: 700; border-bottom: 2px solid #111; display: inline-block; padding-bottom: 3px; margin: 16px 0 6px; }
+.rcpt-honorific { font-size: 13px; font-weight: 400; }
+.rcpt-amount-wrap { margin: 20px 0 6px; }
+.rcpt-amount-label { font-size: 13px; color: #555; margin-bottom: 4px; }
+.rcpt-amount-value { font-size: 32px; font-weight: 700; letter-spacing: .02em; color: #111; }
+.rcpt-amount-suffix { font-size: 16px; font-weight: 400; margin-left: 4px; }
+.rcpt-desc-row { display: flex; align-items: baseline; gap: 12px; margin: 10px 0 20px; font-size: 13px; }
+.rcpt-desc-label { color: #888; white-space: nowrap; }
+.rcpt-desc-value { border-bottom: 1px solid #bbb; flex: 1; padding-bottom: 2px; color: #111; }
+.rcpt-breakdown { margin-bottom: 20px; }
+.rcpt-breakdown-title { font-size: 11px; color: #aaa; letter-spacing: .06em; border-bottom: 1px solid #eee; padding-bottom: 4px; margin-bottom: 8px; }
+.rcpt-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.rcpt-table th { background: #f0f0f0; padding: 7px 12px; font-weight: 500; text-align: left; border-bottom: 2px solid #ccc; font-size: 12px; }
+.rcpt-table th:not(:first-child) { text-align: right; }
+.rcpt-table td { padding: 7px 12px; border-bottom: 1px solid #eee; }
+.rcpt-table td:not(:first-child) { text-align: right; }
+.rcpt-totals { margin-top: 4px; border-top: 1px solid #eee; }
+.rcpt-totals table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.rcpt-totals td { padding: 5px 12px; text-align: right; color: #555; }
+.rcpt-totals td:first-child { text-align: left; }
+.rcpt-totals tr.grand td { font-size: 15px; font-weight: 700; color: #111; border-top: 2px solid #111; padding-top: 7px; }
+.rcpt-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 28px; padding-top: 16px; border-top: 1px solid #eee; }
+.rcpt-issuer { font-size: 12px; color: #444; line-height: 2; }
+.rcpt-issuer-name { font-size: 14px; font-weight: 600; color: #111; }
+.rcpt-seal-area { width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; }
+.rcpt-seal-area img { width: 80px; height: 80px; object-fit: contain; }
+.rcpt-stamp-box { border: 1.5px dashed #ccc; border-radius: 6px; padding: 6px 12px; text-align: center; font-size: 10px; color: #bbb; min-width: 72px; min-height: 52px; display: flex; flex-direction: column; justify-content: center; margin-right: 8px; }
+.rcpt-closing { text-align: center; font-size: 12px; color: #888; margin-top: 20px; }
+
+@media print {
+  .rcpt-page { box-shadow: none; margin: 0; max-width: 100%; padding: 28px 36px; }
+  .rcpt-title { font-size: 24px; }
+  .rcpt-amount-value { font-size: 26px; }
+  .rcpt-table th, .rcpt-table td { padding: 5px 8px; font-size: 11px; }
+  .rcpt-totals td { padding: 4px 8px; font-size: 11px; }
+  .rcpt-totals tr.grand td { font-size: 13px; }
+  .rcpt-seal-area { width: 64px; height: 64px; }
+  .rcpt-seal-area img { width: 64px; height: 64px; }
+}
+
+/* ===== 請求書（青デザイン）===== */
+.inv-page { max-width: 760px; margin: 0 auto 40px; background: #fff; padding: 0; box-shadow: 0 4px 24px rgba(0,0,0,0.10); }
+.inv-header-bar { background: #1a56b0; color: #fff; text-align: center; font-size: 24px; font-weight: 700; letter-spacing: .4em; padding: 12px; }
+.inv-body { padding: 24px 36px 32px; }
+.inv-top-right { text-align: right; font-size: 12px; color: #333; line-height: 2; margin-bottom: 16px; }
+.inv-parties { display: flex; justify-content: space-between; gap: 24px; margin-bottom: 16px; }
+.inv-client-block { flex: 1; }
+.inv-client-name { font-size: 18px; font-weight: 700; color: #111; margin-bottom: 3px; }
+.inv-client-addr { font-size: 11px; color: #555; line-height: 1.8; }
+.inv-issuer-block { text-align: left; font-size: 11px; color: #444; line-height: 1.9; min-width: 200px; }
+.inv-issuer-name { font-size: 15px; font-weight: 700; color: #111; }
+.inv-greeting { font-size: 13px; color: #333; margin-bottom: 10px; }
+.inv-amount-section { margin-bottom: 16px; }
+.inv-amount-header { background: #1a56b0; color: #fff; font-size: 12px; padding: 6px 14px; display: inline-block; border-radius: 2px 2px 0 0; }
+.inv-amount-box { border: 2px solid #1a56b0; padding: 10px 20px; display: inline-block; min-width: 260px; }
+.inv-amount-num { font-size: 28px; font-weight: 700; color: #111; }
+.inv-bank-box { border: 1px solid #ccc; font-size: 12px; margin-bottom: 16px; }
+.inv-bank-box table { width: 100%; border-collapse: collapse; }
+.inv-bank-box td { padding: 6px 10px; border: 1px solid #ccc; }
+.inv-bank-box td:first-child { background: #1a56b0; color: #fff; font-weight: 500; white-space: nowrap; width: 60px; text-align: center; }
+.inv-bank-note { font-size: 11px; color: #555; margin-top: 4px; }
+.inv-tbl { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 4px; }
+.inv-tbl thead th { background: #1a56b0; color: #fff; padding: 6px 8px; font-weight: 400; border: 1px solid #1a56b0; text-align: center; }
+.inv-tbl thead th.left { text-align: left; }
+.inv-tbl tbody td { padding: 0 8px; height: 26px; border: 1px solid #ccc; font-size: 12px; vertical-align: middle; }
+.inv-tbl tbody td.right { text-align: right; }
+.inv-tbl tbody td.center { text-align: center; }
+.inv-bottom { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 8px; gap: 16px; }
+.inv-tax-note { font-size: 11px; color: #555; margin-bottom: 6px; }
+.inv-taxbreak { border-collapse: collapse; font-size: 12px; }
+.inv-taxbreak th { background: #1a56b0; color: #fff; padding: 5px 12px; font-weight: 400; border: 1px solid #1a56b0; }
+.inv-taxbreak td { padding: 5px 12px; border: 1px solid #ccc; text-align: right; }
+.inv-taxbreak td:first-child { text-align: left; }
+.inv-totals-tbl { border-collapse: collapse; font-size: 12px; min-width: 220px; }
+.inv-totals-tbl td { padding: 5px 12px; border: 1px solid #ccc; text-align: right; }
+.inv-totals-tbl td:first-child { background: #1a56b0; color: #fff; text-align: center; font-weight: 500; }
+.inv-totals-tbl tr.grand td:first-child { background: #1a56b0; }
+.inv-totals-tbl tr.grand td { font-weight: 700; font-size: 14px; }
+.inv-notes-section { margin-top: 16px; }
+.inv-notes-header { background: #1a56b0; color: #fff; font-size: 12px; padding: 6px 14px; }
+.inv-notes-body { border: 1px solid #ccc; border-top: none; min-height: 48px; padding: 8px 12px; font-size: 12px; color: #333; white-space: pre-wrap; }
+
+@media print {
+  .inv-page { box-shadow: none; margin: 0; max-width: 100%; }
+  .inv-body { padding: 16px 24px 20px; }
+  .inv-header-bar { font-size: 20px; padding: 8px; }
+  .inv-amount-num { font-size: 22px; }
+  .inv-tbl thead th, .inv-tbl tbody td { padding: 0 6px; height: 21px; font-size: 11px; }
+  .inv-taxbreak th, .inv-taxbreak td, .inv-totals-tbl td { padding: 4px 8px; font-size: 11px; }
+  .inv-totals-tbl tr.grand td { font-size: 12px; }
+  .inv-notes-body { min-height: 32px; }
+  .inv-bank-box td { padding: 4px 8px; font-size: 11px; }
+  .inv-top-right { margin-bottom: 10px; }
+  .inv-parties { margin-bottom: 10px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ナビ -->
+<div id="nav">
+  <div class="logo">🍀 Clover</div>
+  <button class="tab-btn active" onclick="switchTab('inv')">請求書</button>
+  <button class="tab-btn" onclick="switchTab('rec')">領収書</button>
+  <button class="tab-btn" onclick="switchTab('rep')">点検報告書</button>
+  <button class="tab-btn" onclick="switchTab('est')">見積書</button>
+</div>
+
+<!-- ============================================================ 請求書 -->
+<div class="sheet active" id="inv-sheet">
+  <h2>請求書作成</h2>
+
+  <div class="f-sec">
+    <div class="f-sec-title">基本情報</div>
+    <div class="g3">
+      <div class="f-field"><label>請求番号</label><input id="inv-no" value="INV-2026-001"></div>
+      <div class="f-field"><label>発行日</label><input type="date" id="inv-date" oninput="invUpdateDue()"></div>
+      <div class="f-field"><label>振込期日</label>
+        <div style="display:flex;gap:6px">
+          <select id="inv-due-preset" onchange="invApplyDuePreset()" style="flex:1;font-family:inherit;font-size:13px;border:1.5px solid #ddd;border-radius:6px;padding:4px 6px">
+            <option value="">日付指定</option>
+            <option value="当月末">当月末</option>
+            <option value="翌月末" selected>翌月末</option>
+            <option value="翌々月末">翌々月末</option>
+            <option value="30日後">30日後</option>
+            <option value="60日後">60日後</option>
+          </select>
+          <input type="date" id="inv-due" style="flex:1;font-size:13px;border:1.5px solid #ddd;border-radius:6px;padding:4px 6px">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="f-sec">
+    <div class="f-sec-title">請求先</div>
+    <div class="f-field"><label>会社名・氏名</label><input id="inv-to-co" placeholder="株式会社〇〇"></div>
+    <div class="g2">
+      <div class="f-field"><label>郵便番号</label><input id="inv-to-zip" placeholder="〒100-0000"></div>
+      <div class="f-field"><label>担当者</label><input id="inv-to-person" placeholder="山田太郎 様"></div>
+    </div>
+    <div class="f-field"><label>住所</label><input id="inv-to-addr" placeholder="東京都千代田区〇〇1-2-3"></div>
+  </div>
+
+  <div class="f-sec">
+    <div class="f-sec-title">品目・金額</div>
+    <div class="row-header" style="display:grid;grid-template-columns:90px 3fr 60px 60px 100px 55px 28px;gap:6px;font-size:11px;color:#aaa;padding:0 4px 4px">
+      <span>日付</span><span>内容</span><span style="text-align:right">数量</span><span>単位</span><span style="text-align:right">単価</span><span>込/抜</span><span>税率</span><span></span>
+    </div>
+    <div id="inv-items-list"></div>
+    <button class="add-row-btn" onclick="invAddItem()">＋ 品目を追加</button>
+  </div>
+
+  <div class="f-sec">
+    <div class="f-sec-title">備考</div>
+    <div class="f-field"><textarea id="inv-notes" rows="3" placeholder="振込手数料はご負担ください。等"></textarea></div>
+  </div>
+
+  <div class="f-sec">
+    <div class="f-sec-title">発行者情報（変更可）</div>
+    <div class="g2">
+      <div class="f-field"><label>屋号</label><input id="inv-trade" value=""></div>
+      <div class="f-field"><label>メールアドレス</label><input id="inv-email" value="" placeholder="info@example.com"></div>
+    </div>
+    <div class="g3">
+      <div class="f-field"><label>電話番号</label><input id="inv-tel" value="070-9449-9608"></div>
+      <div class="f-field"><label>代表者</label><input id="inv-rep" value="代表　小泉　健"></div>
+    </div>
+  </div>
+
+  <button class="gen-btn" onclick="invGenerate()">請求書を作成</button>
+</div>
+
+<!-- ============================================================ 領収書 -->
+<div class="sheet" id="rec-sheet">
+  <h2>領収書作成</h2>
+
+  <div class="f-sec">
+    <div class="f-sec-title">宛先</div>
+    <div class="f-field"><label>会社名・氏名</label><input id="rec-to" placeholder="株式会社〇〇　山田太郎"></div>
+  </div>
+
+  <div class="f-sec">
+    <div class="f-sec-title">品目・金額</div>
+    <div class="row-header" style="display:grid;grid-template-columns:3fr 90px 60px 110px 32px;gap:8px;font-size:11px;color:#aaa;padding:0 4px 4px">
+      <span>品目・内容</span><span style="text-align:right">数量</span><span>単位</span><span style="text-align:right">金額</span><span></span>
+    </div>
+    <div id="rec-items-list"></div>
+    <button class="add-row-btn" onclick="recAddItem()">＋ 品目を追加</button>
+    <div class="f-field" style="margin-top:12px"><label>消費税区分</label>
+      <select id="rec-tax-type">
+        <option value="10incl" selected>内税 10%（金額は税込）</option>
+        <option value="10">外税 10%（金額は税抜）</option>
+        <option value="8incl">内税 8%（金額は税込）</option>
+        <option value="0">非課税</option>
+        <option value="manual">消費税を手動入力</option>
+      </select>
+    </div>
+    <div class="f-field" id="rec-manual-wrap" style="display:none">
+      <label>消費税額（手動）</label><input type="number" id="rec-manual-tax" placeholder="例: 145" min="0">
+    </div>
+  </div>
+
+  <div class="f-sec">
+    <div class="f-sec-title">但し書き</div>
+    <div class="f-field"><input id="rec-desc" placeholder="例: エアコン清掃代として"></div>
+  </div>
+
+  <div class="f-sec">
+    <div class="f-sec-title">日付・番号</div>
+    <div class="g2">
+      <div class="f-field"><label>領収日</label><input type="date" id="rec-date"></div>
+      <div class="f-field"><label>番号</label><input id="rec-no" value="REC-2026-001"></div>
+    </div>
+  </div>
+
+  <div class="f-sec">
+    <div class="f-sec-title">発行者情報（変更可）</div>
+    <div class="g3">
+      <div class="f-field"><label>屋号</label><input id="rec-trade" value=""></div>
+      <div class="f-field"><label>電話番号</label><input id="rec-tel" value="070-9449-9608"></div>
+      <div class="f-field"><label>代表者</label><input id="rec-rep" value="代表　小泉　健"></div>
+    </div>
+  </div>
+
+  <button class="gen-btn" onclick="recGenerate()">領収書を作成</button>
+</div>
+
+<!-- ============================================================ 点検報告書 -->
+<div class="sheet" id="rep-sheet">
+  <h2>エアコン点検報告書</h2>
+
+  <div class="f-sec">
+    <div class="f-sec-title">顧客情報</div>
+    <div class="f-field"><label>会社名・氏名</label><input id="rep-client" placeholder="株式会社〇〇　山田太郎 様"></div>
+    <div class="f-field"><label>住所</label><input id="rep-addr" placeholder="東京都〇〇区〇〇1-2-3"></div>
+    <div class="g2">
+      <div class="f-field"><label>電話番号</label><input id="rep-client-tel" placeholder="03-0000-0000"></div>
+      <div class="f-field"><label>担当者</label><input id="rep-contact" placeholder="（任意）"></div>
+    </div>
+  </div>
+
+  <div class="f-sec">
+    <div class="f-sec-title">点検情報</div>
+    <div class="g2">
+      <div class="f-field"><label>点検日</label><input type="date" id="rep-date"></div>
+      <div class="f-field"><label>報告書番号</label><input id="rep-no" value="RPT-2026-001"></div>
+    </div>
+    <div class="f-field"><label>点検担当者</label><input id="rep-inspector" placeholder="（任意）"></div>
+  </div>
+
+  <div class="f-sec">
+    <div class="f-sec-title">機器情報</div>
+    <div class="g3">
+      <div class="f-field"><label>メーカー</label><input id="rep-maker" placeholder="ダイキン"></div>
+      <div class="f-field"><label>型番</label><input id="rep-model" placeholder="F56YTEP-W"></div>
+      <div class="f-field"><label>設置年</label><input id="rep-year" placeholder="2018年"></div>
+    </div>
+    <div class="f-field"><label>設置場所・台数</label><input id="rep-location" placeholder="例: 1F 事務所（壁掛け2台）"></div>
+  </div>
+
+  <div class="f-sec">
+    <div class="f-sec-title">点検内容</div>
+    <div class="f-field"><label>点検内容・実施作業</label><textarea id="rep-detail" rows="4" placeholder="例：フィルター清掃、熱交換器洗浄、ドレンパン確認 等"></textarea></div>
+    <div class="f-field"><label>所見・推奨事項</label><textarea id="rep-findings" rows="3" placeholder="例：熱交換器に汚れの蓄積あり。次回クリーニングを推奨。"></textarea></div>
+    <div class="f-field"><label>次回点検推奨日</label><input id="rep-next" placeholder="例: 2027年6月"></div>
+  </div>
+
+  <div class="f-sec">
+    <div class="f-sec-title">写真（任意・最大9枚）</div>
+    <div class="photo-drop" onclick="document.getElementById('rep-photo-input').click()">
+      <input type="file" id="rep-photo-input" accept="image/*" multiple onchange="repAddPhotos(this)">
+      <span>📷 クリックして写真を選択（複数可）</span>
+    </div>
+    <div class="photo-grid" id="rep-photo-grid"></div>
+  </div>
+
+  <div class="f-sec">
+    <div class="f-sec-title">料金説明（交換部品・作業料等）</div>
+    <div class="row-header price-row-header"><span>品目・内容</span><span style="text-align:right">数量</span><span style="text-align:right">金額（税込）</span><span></span></div>
+    <div id="rep-price-list"></div>
+    <button class="add-row-btn" onclick="repAddPriceRow()">＋ 品目を追加</button>
+    <div class="g2" style="margin-top:12px">
+      <div class="f-field"><label>消費税率</label>
+        <select id="rep-tax-rate"><option value="10" selected>10%</option><option value="8">8%</option><option value="0">非課税</option></select>
+      </div>
+    </div>
+    <div class="f-field"><label>備考・支払い条件</label><textarea id="rep-price-notes" rows="2" placeholder="例: 上記金額にてご了承いただける場合はご連絡ください。"></textarea></div>
+  </div>
+
+  <div class="f-sec">
+    <div class="f-sec-title">発行者情報（変更可）</div>
+    <div class="g3">
+      <div class="f-field"><label>屋号</label><input id="rep-trade" value=""></div>
+      <div class="f-field"><label>電話番号</label><input id="rep-tel" value="070-9449-9608"></div>
+      <div class="f-field"><label>担当者名</label><input id="rep-rep" value="代表　小泉　健"></div>
+    </div>
+  </div>
+
+  <button class="gen-btn" onclick="repGenerate()">報告書を作成</button>
+</div>
+
+<!-- ============================================================ 見積書 -->
+<div class="sheet" id="est-sheet">
+  <h2>見積書作成</h2>
+
+  <div class="f-sec">
+    <div class="f-sec-title">基本情報</div>
+    <div class="g3">
+      <div class="f-field"><label>見積番号</label><input id="est-no" value="EST-2026-001"></div>
+      <div class="f-field"><label>見積日</label><input type="date" id="est-date"></div>
+      <div class="f-field"><label>有効期限</label><input type="date" id="est-expiry"></div>
+    </div>
+    <div class="f-field"><label>件名・工事名</label><input id="est-subject" placeholder="例: エアコン修理・入替工事一式"></div>
+  </div>
+
+  <div class="f-sec">
+    <div class="f-sec-title">見積先</div>
+    <div class="f-field"><label>会社名・氏名</label><input id="est-to-co" placeholder="株式会社〇〇"></div>
+    <div class="g2">
+      <div class="f-field"><label>部署</label><input id="est-to-dept" placeholder="（任意）"></div>
+      <div class="f-field"><label>担当者</label><input id="est-to-person" placeholder="山田太郎 様"></div>
+    </div>
+    <div class="f-field"><label>住所</label><input id="est-to-addr" placeholder="（任意）"></div>
+  </div>
+
+  <div class="f-sec">
+    <div class="f-sec-title">品目・金額</div>
+    <div class="row-header inv-row-header"><span>品目・内容</span><span>数量</span><span>単位</span><span>単価（税抜）</span><span>区分</span><span>税額上書</span><span></span></div>
+    <div id="est-items-list"></div>
+    <button class="add-row-btn" onclick="estAddItem()">＋ 品目を追加</button>
+  </div>
+
+  <div class="f-sec">
+    <div class="f-sec-title">備考・条件</div>
+    <div class="f-field"><textarea id="est-notes" rows="3" placeholder="例: 本見積有効期限は発行日より30日間。別途現地調査が必要な場合があります。"></textarea></div>
+  </div>
+
+  <div class="f-sec">
+    <div class="f-sec-title">発行者情報（変更可）</div>
+    <div class="g3">
+      <div class="f-field"><label>屋号</label><input id="est-trade" value=""></div>
+      <div class="f-field"><label>電話番号</label><input id="est-tel" value="070-9449-9608"></div>
+      <div class="f-field"><label>代表者</label><input id="est-rep" value="代表　小泉　健"></div>
+    </div>
+  </div>
+
+  <button class="gen-btn" onclick="estGenerate()">見積書を作成</button>
+</div>
+
+<!-- ============================================================ プレビュー -->
+<!-- 請求書プレビュー -->
+<div class="preview-wrap" id="inv-preview">
+  <div class="preview-btns no-print">
+    <button class="back-btn" onclick="goBack('inv')">← 編集に戻る</button>
+    <button class="prt-btn" onclick="window.print()">🖨 印刷 / PDF</button>
+  </div>
+  <div class="inv-page">
+    <div class="inv-header-bar">請　求　書</div>
+    <div class="inv-body">
+      <div class="inv-top-right" id="p-inv-meta"></div>
+      <div class="inv-parties">
+        <div class="inv-client-block">
+          <div class="inv-client-name" id="p-inv-to-co"></div>
+          <div class="inv-client-addr" id="p-inv-to-addr"></div>
+          <div style="margin-top:12px;font-size:13px;color:#333">下記の通り、請求申し上げます。</div>
+        </div>
+        <div class="inv-issuer-block">
+          <div class="inv-issuer-name">株式会社Clover<span id="p-inv-trade"></span></div>
+          <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 10px;text-align:left"><span>〒</span><span>111-0041</span><span>住所</span><span>東京都台東区元浅草3丁目3番7-401号<br>日神デュオステージ新御徒町</span></div>
+          <div>電話: <span id="p-inv-tel"></span></div>
+          <div id="p-inv-email-row"></div>
+          <div id="p-inv-rep"></div>
+          <div style="margin-top:6px"><img id="p-inv-seal" src="" alt="印" style="width:64px;height:64px;object-fit:contain"></div>
+        </div>
+      </div>
+      <div class="inv-amount-section">
+        <div><div class="inv-amount-header">ご請求金額（税込）</div></div>
+        <div class="inv-amount-box"><div class="inv-amount-num">¥ <span id="p-inv-grand"></span></div></div>
+      </div>
+      <div class="inv-bank-box" id="p-inv-bank-box">
+        <table>
+          <tr><td>振込先</td><td id="p-inv-bank">三井住友銀行　トランクNORTH支店　普通 0737419　カ）クローバー</td></tr>
+          <tr><td>振込期日</td><td id="p-inv-due-disp"></td></tr>
+        </table>
+      </div>
+      <table class="inv-tbl">
+        <thead>
+          <tr>
+            <th style="width:9%">日付</th>
+            <th class="left" style="width:33%">内容</th>
+            <th style="width:6%">軽減</th>
+            <th style="width:8%">数量</th>
+            <th style="width:7%">単位</th>
+            <th style="width:13%">単価（税抜）</th>
+            <th style="width:6%">税率</th>
+            <th style="width:13%">金額（税込）</th>
+          </tr>
+        </thead>
+        <tbody id="p-inv-items"></tbody>
+      </table>
+      <div class="inv-bottom">
+        <div>
+          <div class="inv-tax-note" id="p-inv-tax-note" style="display:none">※は軽減税率対象です。</div>
+          <table class="inv-taxbreak">
+            <thead><tr><th>税区分</th><th>消費税</th><th>金額（税込）</th></tr></thead>
+            <tbody id="p-inv-taxbreak"></tbody>
+          </table>
+        </div>
+        <table class="inv-totals-tbl">
+          <tr><td>小計</td><td id="p-inv-sub"></td></tr>
+          <tr><td>消費税</td><td id="p-inv-tax"></td></tr>
+          <tr class="grand"><td>合計</td><td id="p-inv-total"></td></tr>
+        </table>
+      </div>
+      <div id="p-inv-notes-wrap" class="inv-notes-section" style="display:none">
+        <div class="inv-notes-header">備　考</div>
+        <div class="inv-notes-body" id="p-inv-notes"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 領収書プレビュー -->
+<div class="preview-wrap" id="rec-preview">
+  <div class="preview-btns no-print">
+    <button class="back-btn" onclick="goBack('rec')">← 編集に戻る</button>
+    <button class="prt-btn" onclick="window.print()">🖨 印刷 / PDF</button>
+  </div>
+  <div class="rcpt-page">
+    <div class="rcpt-top">
+      <div class="rcpt-title">領　収　書</div>
+      <div class="rcpt-meta" id="p-rec-meta"></div>
+    </div>
+    <div><span class="rcpt-to" id="p-rec-to"></span><span class="rcpt-honorific">　様</span></div>
+    <div class="rcpt-amount-wrap">
+      <div class="rcpt-amount-label">領収金額</div>
+      <div class="rcpt-amount-value">¥ <span id="p-rec-grand"></span><span class="rcpt-amount-suffix">-</span></div>
+    </div>
+    <div class="rcpt-desc-row">
+      <span class="rcpt-desc-label">但し書き</span>
+      <span class="rcpt-desc-value" id="p-rec-desc"></span>
+    </div>
+    <div class="rcpt-breakdown" id="p-rec-breakdown-wrap">
+      <div class="rcpt-breakdown-title">内　訳</div>
+      <table class="rcpt-table">
+        <thead><tr><th>品目・内容</th><th>数量</th><th>金額</th></tr></thead>
+        <tbody id="p-rec-items"></tbody>
+      </table>
+      <div class="rcpt-totals">
+        <table>
+          <tbody id="p-rec-totals-body"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="rcpt-footer">
+      <div class="rcpt-issuer">
+        <div><strong>株式会社Clover</strong><span id="p-rec-trade"></span></div>
+        <div>〒111-0041　東京都台東区元浅草3丁目3番7-401号<br>日神デュオステージ新御徒町</div>
+        <div>TEL: <span id="p-rec-tel"></span></div>
+        <div class="rcpt-issuer-name" id="p-rec-rep"></div>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:8px">
+<div class="rcpt-seal-area"><img id="p-rec-seal" src="" alt="印"></div>
+      </div>
+    </div>
+    <div class="rcpt-closing">上記の金額を正に領収いたしました。<br><span style="font-size:11px;color:#aaa">※電子領収につき収入印紙不要</span></div>
+  </div>
+</div>
+
+<!-- 点検報告書プレビュー -->
+<div class="preview-wrap" id="rep-preview">
+  <div class="preview-btns no-print">
+    <button class="back-btn" onclick="goBack('rep')">← 編集に戻る</button>
+    <label style="font-size:13px;color:#555;margin-right:4px">印刷サイズ</label>
+    <input type="range" id="rep-zoom-slider" min="50" max="100" value="95" step="1" oninput="repSetZoom(this.value)" style="width:120px;vertical-align:middle">
+    <span id="rep-zoom-label" style="font-size:13px;color:#333;min-width:36px;display:inline-block;text-align:right">95%</span>
+    <button class="prt-btn" style="margin-left:12px" onclick="window.print()">🖨 印刷 / PDF</button>
+  </div>
+  <div class="doc-page">
+    <div class="title-bar">
+      <div class="tbl">Clover</div>
+      <div class="tbtl">エアコン点検報告書</div>
+      <div class="tbmeta" id="p-rep-meta"></div>
+    </div>
+    <div class="client-row">
+      <div>
+        <div class="client-name" id="p-rep-client"></div>
+        <div class="client-sub" id="p-rep-client-sub"></div>
+      </div>
+      <div class="date-box" id="p-rep-date-box"></div>
+    </div>
+    <div id="p-rep-ac-sec" style="margin-bottom:16px">
+      <div class="sec-title">機器情報</div>
+      <table class="info-table" id="p-rep-ac-table"></table>
+    </div>
+    <div style="margin-bottom:16px">
+      <div class="sec-title">点検内容・実施作業</div>
+      <div class="text-block" id="p-rep-detail"></div>
+    </div>
+    <div id="p-rep-findings-sec" style="margin-bottom:16px">
+      <div class="sec-title">所見・推奨事項</div>
+      <div class="text-block" id="p-rep-findings"></div>
+    </div>
+    <div id="p-rep-photos-sec" style="display:none;margin-bottom:16px">
+      <div class="sec-title">点検写真</div>
+      <div class="photo-print-grid" id="p-rep-photos"></div>
+    </div>
+    <div id="p-rep-price-sec" style="display:none;margin-bottom:16px">
+      <div class="sec-title">料金説明・お見積り</div>
+      <table class="price-table">
+        <thead><tr><th>品目・内容</th><th>数量</th><th>単価（税抜）</th><th>金額（税込）</th></tr></thead>
+        <tbody id="p-rep-price-body"></tbody>
+        <tfoot id="p-rep-price-foot"></tfoot>
+      </table>
+      <div id="p-rep-price-notes" style="font-size:12px;color:#666;margin-top:8px;white-space:pre-wrap;"></div>
+    </div>
+    <div class="footer-row">
+      <div class="issuer">
+        <div>株式会社Clover<span id="p-rep-trade"></span></div>
+        <div>〒111-0041　東京都台東区元浅草3丁目3番7-401号<br>日神デュオステージ新御徒町</div>
+        <div>TEL: <span id="p-rep-tel"></span></div>
+        <div class="issuer-name" id="p-rep-rep"></div>
+      </div>
+      <div class="seal-area"><img id="p-rep-seal" src="" alt="印"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 見積書プレビュー -->
+<div class="preview-wrap" id="est-preview">
+  <div class="preview-btns no-print">
+    <button class="back-btn" onclick="goBack('est')">← 編集に戻る</button>
+    <button class="prt-btn" onclick="window.print()">🖨 印刷 / PDF</button>
+  </div>
+  <div class="est-page">
+    <div class="est-top-right" id="p-est-top-right"></div>
+    <div class="est-title">見　積　書</div>
+    <div class="est-parties">
+      <div class="est-left">
+        <div class="est-to-name"><span id="p-est-to-co"></span> <span class="est-to-honorific">御中</span></div>
+        <div class="est-meta-lines" id="p-est-meta-lines"></div>
+        <div class="est-greeting">下記のとおりお見積申し上げます。</div>
+        <div class="est-amount-line">お見積金額<span>¥ <span id="p-est-grand"></span> -</span></div>
+      </div>
+      <div class="est-right">
+        <div>株式会社Clover<span id="p-est-trade"></span></div>
+        <div>〒111-0041　東京都台東区元浅草3丁目3番7-401号</div>
+        <div>日神デュオステージ新御徒町</div>
+        <div>TEL: <span id="p-est-tel"></span></div>
+        <div class="est-right-name" id="p-est-rep"></div>
+        <div class="est-right-seal">
+          <div class="est-seal-area"><img id="p-est-seal" src="" alt="印"></div>
+        </div>
+      </div>
+    </div>
+    <table class="est-table">
+      <thead><tr><th style="width:50%">品目・品名</th><th style="width:12%">数量</th><th style="width:19%">単価</th><th style="width:19%">金額</th></tr></thead>
+      <tbody id="p-est-items"></tbody>
+      <tfoot>
+        <tr><td colspan="2" class="label">小計</td><td colspan="2" id="p-est-sub"></td></tr>
+        <tr><td colspan="2" class="label" id="p-est-tax-label">消費税（10%）</td><td colspan="2" id="p-est-tax"></td></tr>
+        <tr class="grand"><td colspan="2" class="label">合計</td><td colspan="2" id="p-est-total"></td></tr>
+      </tfoot>
+    </table>
+    <div class="est-notes-area" id="p-est-notes"></div>
+  </div>
+</div>
+
+<script>
+/* ===== 共通 ===== */
+const SEAL_B64 = "data:image/png;base64,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";
+['p-inv-seal','p-rec-seal','p-rep-seal','p-est-seal'].forEach(id => document.getElementById(id).src = SEAL_B64);
+
+const today = new Date();
+const iso = d => d.toISOString().slice(0,10);
+const fmt = n => Math.round(n).toLocaleString('ja-JP');
+const fmtDate = v => v ? v.replace(/-/g,'/') : '';
+
+let currentTab = 'inv';
+let currentMode = 'form'; // 'form' | 'preview'
+
+function switchTab(tab) {
+  if(currentMode === 'preview') return; // プレビュー中はタブ切替不可
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', ['inv','rec','rep','est'][i] === tab));
+  document.querySelectorAll('.sheet').forEach(s => s.classList.remove('active'));
+  document.getElementById(tab+'-sheet').classList.add('active');
+}
+
+function showPreview(tab) {
+  currentMode = 'preview';
+  document.getElementById(tab+'-sheet').classList.remove('active');
+  document.getElementById(tab+'-preview').classList.add('active');
+}
+
+function goBack(tab) {
+  currentMode = 'form';
+  document.getElementById(tab+'-preview').classList.remove('active');
+  document.getElementById(tab+'-sheet').classList.add('active');
+}
+
+/* ===== 請求書 ===== */
+let invItems = [{name:'',date:'',qty:'',unit:'',price:'',taxRate:'10',priceType:'抜'}];
+
+document.getElementById('inv-date').value = iso(today);
+invApplyDuePreset();
+
+function invApplyDuePreset(){
+  const preset = document.getElementById('inv-due-preset').value;
+  if(!preset) return;
+  const base = new Date(document.getElementById('inv-date').value || iso(today));
+  let due;
+  if(preset==='当月末') due=new Date(base.getFullYear(),base.getMonth()+1,0);
+  else if(preset==='翌月末') due=new Date(base.getFullYear(),base.getMonth()+2,0);
+  else if(preset==='翌々月末') due=new Date(base.getFullYear(),base.getMonth()+3,0);
+  else if(preset==='30日後') due=new Date(base.getTime()+30*86400000);
+  else if(preset==='60日後') due=new Date(base.getTime()+60*86400000);
+  if(due) document.getElementById('inv-due').value = iso(due);
+}
+function invUpdateDue(){ invApplyDuePreset(); }
+
+function invRenderItems(){
+  const el = document.getElementById('inv-items-list');
+  el.innerHTML = '';
+  invItems.forEach((it,i) => {
+    const r = document.createElement('div');
+    r.style.cssText = 'display:grid;grid-template-columns:90px 3fr 60px 60px 95px 52px 52px 28px;gap:6px;margin-bottom:8px;align-items:center';
+    const is8 = it.taxRate === '8';
+    r.innerHTML = `
+      <input type="date" value="${it.date}" oninput="invItems[${i}].date=this.value" style="border:1.5px solid #e0e0e0;border-radius:8px;padding:8px 6px;font-size:12px;font-family:inherit;outline:none">
+      <input type="text" value="${it.name}" placeholder="内容" oninput="invItems[${i}].name=this.value" style="border:1.5px solid #e0e0e0;border-radius:8px;padding:9px 10px;font-size:13px;font-family:inherit;outline:none">
+      <input type="number" value="${it.qty}" placeholder="数量" oninput="invItems[${i}].qty=this.value" style="border:1.5px solid #e0e0e0;border-radius:8px;padding:9px 8px;font-size:13px;font-family:inherit;outline:none;text-align:right">
+      <input type="text" value="${it.unit}" placeholder="式" oninput="invItems[${i}].unit=this.value" style="border:1.5px solid #e0e0e0;border-radius:8px;padding:9px 8px;font-size:13px;font-family:inherit;outline:none">
+      <input type="number" value="${it.price}" placeholder="${it.priceType==='込'?'税込':'税抜'}" oninput="invItems[${i}].price=this.value" style="border:1.5px solid #e0e0e0;border-radius:8px;padding:9px 8px;font-size:13px;font-family:inherit;outline:none;text-align:right">
+      <select onchange="invItems[${i}].priceType=this.value;invRenderItems()" style="font-family:inherit;font-size:12px;border:1.5px solid ${it.priceType==='込'?'#3d8f5f':'#ddd'};border-radius:6px;height:38px;background:${it.priceType==='込'?'#f0f8f4':'#fff'};color:${it.priceType==='込'?'#2f7249':'#111'};padding:0 4px">
+        <option value="抜"${it.priceType!=='込'?' selected':''}>税抜</option>
+        <option value="込"${it.priceType==='込'?' selected':''}>税込</option>
+      </select>
+      <select onchange="invItems[${i}].taxRate=this.value;invRenderItems()" style="font-family:inherit;font-size:12px;border:1.5px solid ${is8?'#f0c040':'#ddd'};border-radius:6px;height:38px;background:${is8?'#fff8e1':'#fff'};color:${is8?'#7a5700':'#111'};padding:0 4px">
+        <option value="10"${!is8?' selected':''}>10%</option>
+        <option value="8"${is8?' selected':''}>8%※</option>
+      </select>
+      <button class="del-btn" onclick="invRemoveItem(${i})">×</button>`;
+    el.appendChild(r);
+  });
+}
+function invAddItem(){ invItems.push({name:'',date:'',qty:'',unit:'',price:'',taxRate:'10',priceType:'抜'}); invRenderItems(); }
+function invRemoveItem(i){ if(invItems.length>1){ invItems.splice(i,1); invRenderItems(); } }
+
+function invGenerate(){
+  const toCo = document.getElementById('inv-to-co').value.trim();
+  if(!toCo){ alert('請求先を入力してください'); return; }
+
+  const no      = document.getElementById('inv-no').value;
+  const dateStr = fmtDate(document.getElementById('inv-date').value);
+  const dueStr  = fmtDate(document.getElementById('inv-due').value);
+  document.getElementById('p-inv-meta').innerHTML = `発行日　${dateStr}<br>請求番号: ${no}`;
+  document.getElementById('p-inv-due-disp').textContent = dueStr;
+
+  document.getElementById('p-inv-to-co').textContent = toCo + '　御中';
+  const zip    = document.getElementById('inv-to-zip').value;
+  const addr   = document.getElementById('inv-to-addr').value;
+  const person = document.getElementById('inv-to-person').value;
+  let addrLines = [];
+  if(zip)    addrLines.push(zip);
+  if(addr)   addrLines.push(addr);
+  if(person) addrLines.push(person);
+  document.getElementById('p-inv-to-addr').innerHTML = addrLines.join('<br>');
+
+  const trade = document.getElementById('inv-trade').value.trim();
+  document.getElementById('p-inv-trade').textContent = trade ? '　'+trade : '';
+  document.getElementById('p-inv-tel').textContent   = document.getElementById('inv-tel').value;
+  const email = document.getElementById('inv-email').value.trim();
+  const emailEl = document.getElementById('p-inv-email-row');
+  emailEl.textContent = email ? 'メール: '+email : '';
+  document.getElementById('p-inv-rep').textContent   = document.getElementById('inv-rep').value;
+
+  const tbody = document.getElementById('p-inv-items');
+  tbody.innerHTML = '';
+  let sub10=0, sub8=0, has8=false;
+  let taxinc10=0, taxinc8=0;
+  const ROWS = 15;
+  for(let i=0;i<ROWS;i++){
+    const it = invItems[i]||{};
+    const qty   = parseFloat(it.qty)||1;
+    const priceRaw = parseFloat(it.price)||0;
+    const taxR  = it.taxRate==='8' ? 0.08 : 0.10;
+    const price = it.priceType==='込' ? Math.round(priceRaw/(1+taxR)) : priceRaw;
+    const amt   = qty*price;
+    const taxincAmt = it.priceType==='込' ? qty*priceRaw : amt + Math.round(amt*taxR);
+    const is8   = it.taxRate==='8';
+    let dateDisp='', amtDisp='', priceDisp='', keiDisp='';
+    if(it.name||it.price){
+      if(is8){ sub8+=amt; taxinc8+=taxincAmt; has8=true; keiDisp='※'; }
+      else    { sub10+=amt; taxinc10+=taxincAmt; }
+      dateDisp  = it.date ? fmtDate(it.date) : '';
+      priceDisp = priceRaw ? fmt(price) : '';
+      amtDisp   = taxincAmt ? fmt(taxincAmt) : '';
+    }
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="center">${dateDisp}</td><td>${it.name||''}</td><td class="center" style="color:#e67700;font-weight:700">${keiDisp}</td><td class="right">${it.qty?(it.qty):''}</td><td class="center">${it.unit||''}</td><td class="right">${priceDisp}</td><td class="center">${(it.name||it.price)?(is8?'8%':'10%'):''}</td><td class="right">${amtDisp}</td>`;
+    tbody.appendChild(tr);
+  }
+  const tax10 = taxinc10 - sub10;
+  const tax8  = taxinc8  - sub8;
+  const subTotal  = sub10+sub8;
+  const totalTax  = tax10+tax8;
+  const grandTotal = taxinc10+taxinc8;
+
+  document.getElementById('p-inv-sub').textContent   = '¥'+fmt(subTotal);
+  document.getElementById('p-inv-tax').textContent   = '¥'+fmt(totalTax);
+  document.getElementById('p-inv-total').textContent = '¥'+fmt(grandTotal);
+  document.getElementById('p-inv-grand').textContent = fmt(grandTotal);
+
+  // 税区分テーブル
+  const taxNote = document.getElementById('p-inv-tax-note');
+  const taxBreak = document.getElementById('p-inv-taxbreak');
+  taxNote.style.display = has8 ? '' : 'none';
+  let tbHtml = '';
+  if(sub10>0) tbHtml += `<tr><td>10%対象</td><td>¥${fmt(tax10)}</td><td>¥${fmt(sub10)}</td></tr>`;
+  if(sub8>0)  tbHtml += `<tr><td>8%対象※</td><td>¥${fmt(tax8)}</td><td>¥${fmt(sub8)}</td></tr>`;
+  taxBreak.innerHTML = tbHtml;
+
+  const notes = document.getElementById('inv-notes').value;
+  const notesWrap = document.getElementById('p-inv-notes-wrap');
+  if(notes){ document.getElementById('p-inv-notes').textContent=notes; notesWrap.style.display=''; }
+  else { notesWrap.style.display='none'; }
+
+  showPreview('inv');
+}
+
+/* ===== 領収書 ===== */
+let recItems = [{name:'',qty:'1',unit:'',price:''}];
+document.getElementById('rec-date').value = iso(today);
+document.getElementById('rec-tax-type').addEventListener('change', function(){
+  document.getElementById('rec-manual-wrap').style.display = this.value==='manual' ? '' : 'none';
+});
+
+function recRenderItems(){
+  const el = document.getElementById('rec-items-list');
+  el.innerHTML = '';
+  recItems.forEach((it,i) => {
+    const r = document.createElement('div');
+    r.style.cssText = 'display:grid;grid-template-columns:3fr 90px 60px 110px 32px;gap:8px;margin-bottom:8px;align-items:center';
+    r.innerHTML = `
+      <input type="text" value="${it.name}" placeholder="品目・内容" oninput="recItems[${i}].name=this.value" style="border:1.5px solid #e0e0e0;border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none">
+      <input type="number" value="${it.qty}" placeholder="1" oninput="recItems[${i}].qty=this.value" style="border:1.5px solid #e0e0e0;border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;text-align:right">
+      <input type="text" value="${it.unit}" placeholder="式" oninput="recItems[${i}].unit=this.value" style="border:1.5px solid #e0e0e0;border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none">
+      <input type="number" value="${it.price}" placeholder="金額" oninput="recItems[${i}].price=this.value" style="border:1.5px solid #e0e0e0;border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;text-align:right">
+      <button class="del-btn" onclick="recRemoveItem(${i})">×</button>`;
+    el.appendChild(r);
+  });
+}
+function recAddItem(){ recItems.push({name:'',qty:'1',unit:'',price:''}); recRenderItems(); }
+function recRemoveItem(i){ if(recItems.length>1){ recItems.splice(i,1); recRenderItems(); } }
+
+function recGenerate(){
+  const toName = document.getElementById('rec-to').value.trim();
+  if(!toName){ alert('宛先を入力してください'); return; }
+
+  const taxType = document.getElementById('rec-tax-type').value;
+  const taxRate10 = taxType==='10' ? 0.1 : taxType==='10incl' ? 0.1 : taxType==='8incl' ? 0.08 : 0;
+  const isIncl = taxType==='10incl' || taxType==='8incl';
+  const isManual = taxType==='manual';
+  const manualTax = isManual ? (parseFloat(document.getElementById('rec-manual-tax').value)||0) : null;
+
+  // 品目計算
+  const validItems = recItems.filter(r => r.name || r.price);
+  if(!validItems.length){ alert('品目を入力してください'); return; }
+
+  let grandTotal = 0;
+  validItems.forEach(r => { grandTotal += (parseFloat(r.qty)||1) * (parseFloat(r.price)||0); });
+
+  let subExcl, taxAmt, grandTaxIncl;
+  if(isIncl){
+    grandTaxIncl = grandTotal;
+    subExcl = Math.round(grandTotal / (1 + taxRate10));
+    taxAmt = grandTaxIncl - subExcl;
+  } else if(isManual){
+    grandTaxIncl = grandTotal + manualTax;
+    subExcl = grandTotal;
+    taxAmt = manualTax;
+  } else if(taxType==='0'){
+    grandTaxIncl = grandTotal;
+    subExcl = grandTotal;
+    taxAmt = 0;
+  } else {
+    subExcl = grandTotal;
+    taxAmt = Math.round(grandTotal * taxRate10);
+    grandTaxIncl = subExcl + taxAmt;
+  }
+
+  const dateStr = fmtDate(document.getElementById('rec-date').value);
+  const no = document.getElementById('rec-no').value;
+  document.getElementById('p-rec-meta').innerHTML = `No. ${no}<br>${dateStr}`;
+  document.getElementById('p-rec-to').textContent = toName;
+  document.getElementById('p-rec-grand').textContent = fmt(grandTaxIncl);
+  document.getElementById('p-rec-desc').textContent = document.getElementById('rec-desc').value || '―';
+
+  // 品目テーブル
+  const tbody = document.getElementById('p-rec-items');
+  tbody.innerHTML = '';
+  validItems.forEach(r => {
+    const qty = parseFloat(r.qty)||1;
+    const price = parseFloat(r.price)||0;
+    const amt = qty * price;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${r.name||'―'}</td><td style="text-align:right">${qty}${r.unit?' '+r.unit:''}</td><td style="text-align:right">¥${fmt(amt)}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  // 合計行
+  const totalsBody = document.getElementById('p-rec-totals-body');
+  if(taxType==='0'){
+    totalsBody.innerHTML = `<tr class="grand"><td>合計</td><td>¥${fmt(grandTaxIncl)}</td></tr>`;
+  } else {
+    const taxLabel = taxType==='8incl' ? '消費税（8%）' : '消費税（10%）';
+    totalsBody.innerHTML = `
+      <tr><td>小計（税抜）</td><td>¥${fmt(subExcl)}</td></tr>
+      <tr><td>${taxLabel}</td><td>¥${fmt(taxAmt)}</td></tr>
+      <tr class="grand"><td>合計（税込）</td><td>¥${fmt(grandTaxIncl)}</td></tr>`;
+  }
+
+  const trade = document.getElementById('rec-trade').value.trim();
+  document.getElementById('p-rec-trade').textContent = trade ? '　'+trade : '';
+  document.getElementById('p-rec-tel').textContent = document.getElementById('rec-tel').value;
+  document.getElementById('p-rec-rep').textContent = document.getElementById('rec-rep').value;
+
+  showPreview('rec');
+}
+
+/* ===== 点検報告書 ===== */
+let repPhotos = [];
+let repPriceRows = [];
+
+document.getElementById('rep-date').value = iso(today);
+
+function repAddPhotos(input){
+  Array.from(input.files).forEach(f => {
+    if(repPhotos.length>=9) return;
+    const reader = new FileReader();
+    reader.onload = e => { repPhotos.push({dataUrl:e.target.result,caption:''}); repRenderPhotoGrid(); };
+    reader.readAsDataURL(f);
+  });
+  input.value='';
+}
+function repRenderPhotoGrid(){
+  const grid = document.getElementById('rep-photo-grid');
+  grid.innerHTML='';
+  repPhotos.forEach((p,i)=>{
+    const wrap = document.createElement('div');
+    wrap.innerHTML=`
+      <div class="photo-thumb"><img src="${p.dataUrl}" alt="写真${i+1}"><button class="rm-photo" onclick="repRemovePhoto(${i})">×</button></div>
+      <div class="photo-cap"><input type="text" placeholder="キャプション（任意）" value="${p.caption}" oninput="repPhotos[${i}].caption=this.value"></div>`;
+    grid.appendChild(wrap);
+  });
+}
+function repRemovePhoto(i){ repPhotos.splice(i,1); repRenderPhotoGrid(); }
+
+function repAddPriceRow(){ repPriceRows.push({name:'',qty:'1',price:''}); repRenderPriceList(); }
+function repRemovePriceRow(i){ repPriceRows.splice(i,1); repRenderPriceList(); }
+function repRenderPriceList(){
+  const el = document.getElementById('rep-price-list');
+  el.innerHTML='';
+  repPriceRows.forEach((r,i)=>{
+    const row = document.createElement('div');
+    row.className='price-row';
+    row.innerHTML=`
+      <input type="text" value="${r.name}" placeholder="品目・内容" oninput="repPriceRows[${i}].name=this.value">
+      <input type="number" value="${r.qty}" min="1" oninput="repPriceRows[${i}].qty=this.value">
+      <input type="number" value="${r.price}" placeholder="金額（税込）" oninput="repPriceRows[${i}].price=this.value">
+      <button class="del-btn" onclick="repRemovePriceRow(${i})">×</button>`;
+    el.appendChild(row);
+  });
+}
+repAddPriceRow();
+
+function repGenerate(){
+  const client = document.getElementById('rep-client').value.trim();
+  if(!client){ alert('顧客名を入力してください'); return; }
+
+  const no      = document.getElementById('rep-no').value;
+  const dateStr = fmtDate(document.getElementById('rep-date').value);
+  document.getElementById('p-rep-meta').innerHTML = `No. ${no}<br>${dateStr}`;
+
+  document.getElementById('p-rep-client').textContent = client;
+  const addr    = document.getElementById('rep-addr').value;
+  const tel     = document.getElementById('rep-client-tel').value;
+  const contact = document.getElementById('rep-contact').value;
+  let subLines=[];
+  if(addr) subLines.push(addr);
+  if(tel)  subLines.push('TEL: '+tel);
+  if(contact) subLines.push('担当: '+contact);
+  document.getElementById('p-rep-client-sub').innerHTML = subLines.join('<br>');
+
+  const inspector = document.getElementById('rep-inspector').value;
+  const nextDate  = document.getElementById('rep-next').value;
+  let dateBox = `点検日：${dateStr}`;
+  if(inspector) dateBox += `<br>担当：${inspector}`;
+  if(nextDate)  dateBox += `<br>次回推奨：${nextDate}`;
+  document.getElementById('p-rep-date-box').innerHTML = dateBox;
+
+  const maker = document.getElementById('rep-maker').value;
+  const model = document.getElementById('rep-model').value;
+  const year  = document.getElementById('rep-year').value;
+  const loc   = document.getElementById('rep-location').value;
+  const acRows = [['メーカー',maker],['型番',model],['設置年',year],['設置場所・台数',loc]].filter(r=>r[1]);
+  const acTable = document.getElementById('p-rep-ac-table');
+  if(acRows.length){
+    acTable.innerHTML = acRows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+    document.getElementById('p-rep-ac-sec').style.display='';
+  } else {
+    document.getElementById('p-rep-ac-sec').style.display='none';
+  }
+
+  document.getElementById('p-rep-detail').textContent = document.getElementById('rep-detail').value||'―';
+
+  const findings = document.getElementById('rep-findings').value;
+  if(findings){
+    document.getElementById('p-rep-findings').textContent = findings;
+    document.getElementById('p-rep-findings-sec').style.display='';
+  } else {
+    document.getElementById('p-rep-findings-sec').style.display='none';
+  }
+
+  const photosGrid = document.getElementById('p-rep-photos');
+  photosGrid.innerHTML='';
+  if(repPhotos.length){
+    repPhotos.forEach((p,i)=>{
+      const item=document.createElement('div');
+      item.className='photo-print-item';
+      item.innerHTML=`<img src="${p.dataUrl}" alt="写真${i+1}"><div class="photo-print-cap">${p.caption||'写真'+(i+1)}</div>`;
+      photosGrid.appendChild(item);
+    });
+    document.getElementById('p-rep-photos-sec').style.display='';
+  } else {
+    document.getElementById('p-rep-photos-sec').style.display='none';
+  }
+
+  const taxRate = parseFloat(document.getElementById('rep-tax-rate').value)/100;
+  const validRows = repPriceRows.filter(r=>r.name||r.price);
+  if(validRows.length){
+    const tbody = document.getElementById('p-rep-price-body');
+    tbody.innerHTML='';
+    let sub=0;
+    validRows.forEach(r=>{
+      const qty=parseFloat(r.qty)||1;
+      const price=parseFloat(r.price)||0;
+      const amt=qty*price; sub+=amt;
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${r.name||'―'}</td><td style="text-align:right">${qty}</td><td style="text-align:right">¥${fmt(price)}</td><td style="text-align:right">¥${fmt(amt)}</td>`;
+      tbody.appendChild(tr);
+    });
+    const tax=Math.round(sub*taxRate);
+    const total=sub+tax;
+    const tfoot=document.getElementById('p-rep-price-foot');
+    if(taxRate>0){
+      tfoot.innerHTML=`
+        <tr><td colspan="3" style="text-align:left;color:#888">小計（税抜）</td><td>¥${fmt(sub)}</td></tr>
+        <tr><td colspan="3" style="text-align:left;color:#888">消費税（${Math.round(taxRate*100)}%）</td><td>¥${fmt(tax)}</td></tr>
+        <tr class="grand"><td colspan="3" style="text-align:left">合計（税込）</td><td>¥${fmt(total)}</td></tr>`;
+    } else {
+      tfoot.innerHTML=`<tr class="grand"><td colspan="3" style="text-align:left">合計</td><td>¥${fmt(sub)}</td></tr>`;
+    }
+    document.getElementById('p-rep-price-notes').textContent = document.getElementById('rep-price-notes').value;
+    document.getElementById('p-rep-price-sec').style.display='';
+  } else {
+    document.getElementById('p-rep-price-sec').style.display='none';
+  }
+
+  const trade = document.getElementById('rep-trade').value.trim();
+  document.getElementById('p-rep-trade').textContent = trade ? '　'+trade : '';
+  document.getElementById('p-rep-tel').textContent   = document.getElementById('rep-tel').value;
+  document.getElementById('p-rep-rep').textContent   = document.getElementById('rep-rep').value;
+
+  showPreview('rep');
+}
+
+invRenderItems();
+
+
+/* ===== 見積書 ===== */
+let estItems = [{name:'',qty:'',unit:'',price:'',taxType:'外税',taxOverride:''}];
+
+(function(){
+  const d = new Date();
+  document.getElementById('est-date').value = iso(d);
+  const exp = new Date(d.getFullYear(), d.getMonth()+2, 0);
+  document.getElementById('est-expiry').value = iso(exp);
+})();
+estRenderItems();
+
+function estRenderItems(){
+  const el = document.getElementById('est-items-list');
+  el.innerHTML = '';
+  estItems.forEach((it,i) => {
+    const r = document.createElement('div');
+    r.className = 'item-row inv-item-row';
+    const isIncl = it.taxType === '内税';
+    r.innerHTML = `
+      <input type="text" value="${it.name}" placeholder="品目・品名" oninput="estItems[${i}].name=this.value">
+      <input type="number" value="${it.qty}" placeholder="数量" oninput="estItems[${i}].qty=this.value">
+      <input type="text" value="${it.unit}" placeholder="式" oninput="estItems[${i}].unit=this.value">
+      <input type="number" value="${it.price}" placeholder="${isIncl?'単価(税込)':'単価(税抜)'}" oninput="estItems[${i}].price=this.value">
+      <select class="tax-sel${isIncl?' incl':''}" onchange="estItems[${i}].taxType=this.value;estRenderItems()">
+        <option value="外税"${!isIncl?' selected':''}>外税</option>
+        <option value="内税"${isIncl?' selected':''}>内税</option>
+      </select>
+      <input type="number" value="${it.taxOverride}" placeholder="${isIncl?'例:145':'-'}" ${!isIncl?'disabled style="background:#f5f5f5;color:#bbb"':''} oninput="estItems[${i}].taxOverride=this.value" style="font-size:12px;padding:4px 6px;border:1.5px solid #ddd;border-radius:6px;width:100%">
+      <button class="del-btn" onclick="estRemoveItem(${i})">×</button>`;
+    el.appendChild(r);
+  });
+}
+function estAddItem(){ estItems.push({name:'',qty:'',unit:'',price:'',taxType:'外税',taxOverride:''}); estRenderItems(); }
+function estRemoveItem(i){ if(estItems.length>1){ estItems.splice(i,1); estRenderItems(); } }
+
+function estGenerate(){
+  const toCo = document.getElementById('est-to-co').value.trim();
+  if(!toCo){ alert('見積先を入力してください'); return; }
+
+  const no      = document.getElementById('est-no').value;
+  const dateStr = fmtDate(document.getElementById('est-date').value);
+  const expStr  = fmtDate(document.getElementById('est-expiry').value);
+  document.getElementById('p-est-top-right').innerHTML = `${dateStr}<br>見積番号: ${no}`;
+  document.getElementById('p-est-to-co').textContent = toCo;
+
+  const dept   = document.getElementById('est-to-dept').value;
+  const person = document.getElementById('est-to-person').value;
+  const addr   = document.getElementById('est-to-addr').value;
+  const subject = document.getElementById('est-subject').value.trim();
+  let metaLines = [];
+  if(dept)    metaLines.push(dept + (person ? '　'+person : ''));
+  else if(person) metaLines.push(person);
+  if(addr)    metaLines.push(addr);
+  if(subject) metaLines.push('件名: ' + subject);
+  metaLines.push('有効期限: ' + expStr);
+  document.getElementById('p-est-meta-lines').innerHTML = metaLines.join('<br>');
+
+  const tbody = document.getElementById('p-est-items');
+  tbody.innerHTML = '';
+  let subExcl = 0, totalTax = 0;
+  const ROWS = 20;
+  for(let i=0;i<ROWS;i++){
+    const it = estItems[i]||{};
+    const qty = parseFloat(it.qty)||0;
+    const price = parseFloat(it.price)||0;
+    const amt = qty*price;
+    const isIncl = it.taxType==='内税';
+    let amtExcl=0,taxAmt=0,priceDisp='',amtDisp='';
+    if(it.name||it.price){
+      if(isIncl){
+        amtExcl = Math.round(amt/1.1);
+        const ov = it.taxOverride!==''&&it.taxOverride!==undefined ? parseFloat(it.taxOverride) : null;
+        if(ov!==null){ taxAmt=ov; amtExcl=amt-ov; } else { taxAmt=amt-amtExcl; }
+        priceDisp = price ? fmt(price)+'<br><small style="color:#a07000">（内税）</small>' : '';
+        amtDisp   = amt   ? fmt(amt)+'<br><small style="color:#a07000">（内税）</small>' : '';
+      } else {
+        amtExcl=amt; taxAmt=Math.round(amt*0.1);
+        priceDisp = price ? fmt(price) : '';
+        amtDisp   = amt ? fmt(amt) : '';
+      }
+      subExcl+=amtExcl; totalTax+=taxAmt;
+    }
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${it.name||''}</td><td class="right">${it.qty?(it.qty+' '+(it.unit||'')):''}</td><td class="right">${priceDisp}</td><td class="right">${amtDisp}</td>`;
+    tbody.appendChild(tr);
+  }
+  const total = subExcl+totalTax;
+  document.getElementById('p-est-sub').textContent   = '¥'+fmt(subExcl);
+  document.getElementById('p-est-tax-label').textContent = totalTax>0 ? '消費税（10%）' : '消費税';
+  document.getElementById('p-est-tax').textContent   = totalTax>0 ? '¥'+fmt(totalTax) : '-';
+  document.getElementById('p-est-total').textContent = '¥'+fmt(total);
+  document.getElementById('p-est-grand').textContent = fmt(total);
+  const notes = document.getElementById('est-notes').value;
+  document.getElementById('p-est-notes').textContent = notes;
+
+  const trade = document.getElementById('est-trade').value.trim();
+  document.getElementById('p-est-trade').textContent = trade ? '　'+trade : '';
+  document.getElementById('p-est-tel').textContent   = document.getElementById('est-tel').value;
+  document.getElementById('p-est-rep').textContent   = document.getElementById('est-rep').value;
+
+  showPreview('est');
+}
+
+function repSetZoom(v){
+  document.documentElement.style.setProperty('--rep-zoom', v/100);
+  document.getElementById('rep-zoom-label').textContent = v + '%';
+}
+</script>
+</body>
+</html>
